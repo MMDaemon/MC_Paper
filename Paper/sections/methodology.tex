@@ -1,0 +1,75 @@
+%!TEX root = ../article.tex
+
+% Introduction
+\section{Vorgehen}
+Um mögliche Auswirkungen einer EDID-Manipulation reproduzierbar prüfen zu können, wird ein Testsystem benötigt. Hierfür wurde ein \emph{Raspberry Pi 3B} mit Raspbian als Betriebssystem sowie ein \emph{ATmega2560} Microcontroller (Elegoo MEGA 2560 R3) zusammen mit einem HDMI Breakout-Board eingesetzt. Damit lässt sich ein Monitor simulieren indem der Raspberry die EDID-Daten über den \interintegratedbus-Bus anfragt und von dem Microcontroller geliefert bekommt. 
+
+Auf diese Weise besteht die Möglichkeit die EDID-Verarbeitung nicht nur direkt zu testen sondern, aufgrund der Quelloffenheit von Linux, auch direkt im Quelltext statisch zu analysieren.
+
+\subsection{Versuchsaufbau}
+Der Versuchsaufbau konzentriert sich auf Plug\&Play sowie die Übertragung von EDID-Blöcken über \interintegratedbus. 
+Aus diesem Grund werden nicht alle HDMI Pins genutzt. Tabelle \ref{TblRelevantePins} stellt die relevanten Pins für diesen Aufbau dar. 
+Wie sich dieser Versuchsaufbau erweitern ließe wird in \cref{sec:ausblick} skizziert.
+
+
+\hspace*{-4cm}
+\begin{table}[H]
+	\caption{Genutzte Pins des HDMI Ports}
+	\def\arraystretch{1.5}
+	\centering
+	\small
+	\setlength\tabcolsep{1pt}
+	\label{TblRelevantePins}
+	\makebox[-1.1 \textwidth][c]{       %centering table
+\begin{tabular}{|c|c|c|}
+	\hline 
+	\textbf{Pin} & \textbf{Funktion} & \textbf{Beschreibung}\\ 	\hline 
+	15 & SCL & Clock-Signal für den \interintegratedbus-Bus\\ \hline 
+	16 & SDA & Datenlinie für den \interintegratedbus-Bus\\ \hline 
+	17 & DDC/CEC Ground & Einheitliche Erde\\ \hline 
+	18 & +5V & Spannungsversorgung für \interintegratedbus und den \eeprom \\ \hline 	
+	19 & Hot-Plug-Detect & HIGH für 'an', LOW für 'aus'\\ \hline 		
+\end{tabular} 
+}
+\end{table}
+
+Diese Pins müssen entsprechend Abbildung \ref{fig:hdmi-arduino} mit dem Microcontroller 
+verschaltet werden\footnote{Die gesamte Pinbelegung kann in der HDMI Spezifikation nachgelesen werden (\cite[S.12]{Hdmi14Specification})}. \newpage
+
+Die SCL- und SDA-Pins werden direkt mit den entsprechenden Pins auf dem Arduino-Board  verbunden.
+Das selbe gilt für die Pins 17 und 18. Diese werden mit die GND und 5V-Pins verbunden. 
+Der Hotplug-Pin kann mit einem beliebigen digitalen Ausgangspin verschaltet werden. 
+Wird er auf \emph{High} gesetzt, wird das Kabel ``eingesteckt'' und analog bei \emph{Low} ``ausgesteckt''.
+Hier müssen die --- von der HDMI Spezifikation vorgegebenen --- Zeiten eingehalten werden \cite[S.73]{Hdmi14Specification}.
+Die dargestellten Widerstände können genutzt werden, dazu müssen die internen Pull-Up Widerstände des Arduino allerdings ausgeschaltet werden. 
+Ansonsten können die Widerstände auch weggelassen werden.
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.5\textwidth]{hdmi-arduino}
+	\caption{Verschaltung HDMI und Arduino MEGA 2560}
+	\label{fig:hdmi-arduino}
+\end{figure}
+
+\subsection{Microcontroller Software}
+Auf dem Microcontroller befindet sich ein Programm welches den Hot-Plug-Pin setzen kann. Über eine serielle Schnittstelle kann der Pin  geschaltet werden ohne den Versuchsaufbau 
+verändern zu müssen.
+Somit kann der Versuchsaufbau stehen bleiben ohne Kabel ein- und aus-stecken zu müssen. Dieses Programm kümmert sich außerdem um die Verarbeitung des \acrshort{ddc}. 
+Wenn die EDID-Daten vom Host angefragt werden so sorgt es dafür, dass diese \interintegratedbus-Anfragen entsprechend beantwortet werden. Es liefert zunächst nur einen
+Standard-EDID Block ohne Extensions zurück. Je nach Konfiguration können allerdings Extension-Blöcke gesendet werden. 
+Des Weiteren ermöglicht es das Programm die einzelnen Bytes des 128 Byte langen EDID-Blocks frei zu verändern und korrigiert entsprechend das Prüfsummen-Byte des Blocks.
+
+\subsection{Statische Analyse}
+Zusammen mit dem Versuchsaufbau wird eine statische Analyse des Quellcodes der betroffenen Module durchgeführt. Dies ermöglicht das direkte überprüfen sowie einen umfassenden Einblick
+aufgrund der Quelloffenheit von Linux.
+
+Für den X-Server findet sich die Implementierung von \acrshort{ddc} in \path{hw/xfree86/ddc/} sowie \path{hw/xfree86/common/}\footnote{Siehe: \url{https://github.com/mirror/xserver}}.
+Die entsprechende Implementierung von \acrshort{ddc} für das DRM Subsystem des Kernels liegt in \path{drivers/gpu/drm}\footnote{Siehe: \url{https://github.com/torvalds/linux}}
+
+Durch diese Kombination wurde ein Testaufbau erzeugt welcher sowohl die konkrete Implementierung untersuchbar macht als auch die direkte Überprüfung von Vermutungen ermöglicht.
+Im nächsten Abschnitt wird dabei genauer auf die Funktionsweise des Codes eingegangen. 
+
+
+
+
+

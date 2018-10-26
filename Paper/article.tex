@@ -1,0 +1,75 @@
+% ------------------------------------------
+%  IEEE ARTICLE TEMPLATE
+% ------------------------------------------
+% Author(s):
+% Institution(s):
+% ------------------------------------------
+\documentclass[journal,twocolumn,a4paper,12pt]{IEEEtran}
+
+\usepackage[acronym]{glossaries}
+\usepackage[utf8]{inputenc}
+\usepackage{ngerman}
+\usepackage{hyperref} 
+\usepackage{float}
+\usepackage{graphicx}
+\graphicspath{{figures/}}
+\usepackage[german,nameinlink]{cleveref}
+\usepackage{url}
+\def\UrlBreaks{\do\/\do-}
+\usepackage{blindtext}
+\usepackage{breqn}
+\usepackage{listings}
+\lstset{
+  columns=fullflexible,
+  frame=single,
+  breaklines=true,
+}
+
+% Use separator for footnotes
+\makeatletter
+\def\footnoterule{\relax%
+	\kern-5pt
+	\hbox to \columnwidth{\hfill\vrule width 0.5\columnwidth height 0.4pt\hfill}
+	\kern4.6pt}
+\makeatother
+
+% Generates the acronyms list
+\makeglossaries
+
+% Acronyms list
+\input{acronyms/acronyms.tex}
+
+% ------------------------------------------
+%  MAIN DOCUMENT
+% ------------------------------------------
+\begin{document}
+		
+
+% Variables file
+\input{variables.tex}
+
+% Article title
+\title{\Title}
+
+% Author(s) Name
+\author{\Authors\\
+        \Institutions}
+
+\maketitle
+
+% Abstract
+\input{abstract/abstract.tex}
+
+% Keywords
+%\input{keywords/keywords.tex}
+
+% Sections
+\input{sections/main.tex}
+
+\addcontentsline{toc}{section}{Abbildungsverzeichnis}
+\listoffigures
+
+\bibliographystyle{plain}
+\bibliography{bibliography/article}
+
+\end{document}

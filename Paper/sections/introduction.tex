@@ -1,0 +1,42 @@
+
+%!TEX root = ../article.tex
+
+% Introduction
+\section{Einleitung}
+\label{sec:introduction}
+Seit Ende 2003 wird in die \gls{hdmi} Schnittstelle in vielen Produkten wie Grafikkarten, Laptops, Fernseher, Beamer, etc. verbaut. Dennoch finden sich bislang wenig wissenschaftliche Arbeiten zu dem Thema Sicherheit von \acrshort{hdmi}. Aufgrund der hohen Verbreitung und großen Akzeptanz findet sich bei fast jedem aktuellen Gerät eine HDMI-Schnittstelle. Der \acrshort{vesa} Standard ist grundsätzlich auf Sicherheit ausgelegt. So wird das digitale Rechtemanagement durch \gls{hdcp} auf Signalebene gewährleistet. Doch auch \acrshort{hdcp} ist mitunter nicht mehr so sicher wie angedacht. So gelang es im Jahre 2011 diverse private Schlüssel von HDCP-fähigen Monitoren zu extrahieren \cite{5766480}.
+
+Um  einen möglichst reibungslosen Ablauf beim Anschließen eines Bildschirms zu gewährleisten, ist wie bei andern modernen Geräten auch im HDMI Standard \emph{Plug and Play} vorgesehen. Hierfür muss die Signalsenke der Signalquelle ihre Eigenschaften und Konfigurationsmöglichkeiten mitteilen können. 
+Für diese Funktionalität wird der \emph{\gls{ddc}} verwendet. Dieser Standard ermöglicht es zusammen mit der \textbf{\gls{edid}}-Datenstruktur die Möglichkeiten des Anzeigegeräts in Erfahrung zu bringen. Die Daten werden über das \acrshort{i2c}-Protokoll über zwei ausschließlich dafür vorgesehenen Pins im HDMI-Kabel übertragen. 
+
+Die EDID-Datenstruktur befindet sich auf einem \eeprom-Speicher im Anzeigegerät, welcher durch den \interintegratedbus-Bus mit Spannung versorgt wird. Dies führt dazu, dass das Anzeigegerät bereits im stromlosen Zustand konfiguriert werden kann. 
+Diese grundlegende Funktion ist bei allen Implementierungen des Standards vorhanden und bietet so das Potenzial weit verbreiteter Angriffsmöglichkeiten sollten sich Sicherheitslücken finden.
+
+\emph{NGS Secure} hat zu diesem Thema im Jahr 2012 die erste Publikation mit dem Titel \emph{HDMI - Hacking Displays Made Interesting} zu diesem Thema veröffentlicht \cite{AndyDavis}. In der Arbeit wird ein Fuzzing der EDID-Datenstruktur durchgeführt und kommt zu dem Ergebnis dass unvorhergesehene Abstürze  provoziert werden können. Als Testsysteme wurden Blackberry OS und Windows verwendet. Allerdings werden die Ursachen für dieses Verhalten nicht weiter untersucht. \\
+
+Durch die genannte Publikation wurde die Aufmerksamkeit der Autoren auf die Sicherheit von HDMI gelenkt. Ausgehend davon besteht der Verdacht, dass auch in Linux solche Fehleranfälligkeiten existieren. Daher ist das Ziel dieses Papers Teile von Linux auf solche zu untersuchen. Genauer soll die Verarbeitung von \acrshort{edid}-Daten zum einen im \acrfull{drm}, sowie in \emph{xfree86} \gls{ddx} in der X.Org Implementierung des X-Servers, auf mögliche Schwachstellen untersucht werden.\\
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.5\textwidth]{xserver-drm-arch}
+	\caption{Übersicht des Linux Grafik-Stack}
+	\label{fig:linux-graphic-stack}
+\end{figure}
+
+Der Linux Grafik-Stack benötigt zwei hardwarespezifische Treiber. Zum Einen wird dieser direkt im X-Server als \gls{ddx} benötigt. 
+Hierzu wird das Modul \emph{xfree86} genutzt, welches die größte Auswahl an Treibern bietet. 
+Xfree86 stellt eine EDID-Verarbeitung zu Verfügung, welche von den implementierten Treibern genutzt werden kann. 
+Diese Verarbeitung wurde im Rahmen dieser Forschungsarbeit untersucht. \\
+
+
+Des weiteren benötigt der Grafik-Stack eine Möglichkeit direkt auf die
+Hardware zugreifen zu können. Dies ist für 3D-Anwendungen notwendig, da die Latenzzeiten den X-Server nicht für moderne Anwendungen eignen.
+Aus diesem Grund wurde die \gls{dri} eingeführt, welche über hardwarespezifische DRM-Module einen direkteren Weg für de Zugriff auf die Grafikkarte bietet.
+In Abbildung \ref{fig:linux-graphic-stack} ist die Architektur schematisch dargestellt und verdeutlicht die Notwendigkeit für einen Userspace sowie einen Kernelspace Treiber.
+Zwar ist es möglich ohne 3D Unterstützung nur mit dem X-Server zu arbeiten, dennoch liefern die gängigen Distributionen stets beides.
+
+
+
+
+
+%\footnote{https://nouveau.freedesktop.org/wiki/GraphicStackOverview/}

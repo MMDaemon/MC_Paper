@@ -1,0 +1,18 @@
+%!TEX root = ../article.tex
+
+% Conclusion
+\section{Implementierung der  Texturierung}
+\label{sec:implementierungTexturierung}
+Da bei einem Vertex, der zwischen zwei Voxeln liegt, die beide eine Füllmenge > 0 haben das Meterial beider Voxel beim Texturieren beachtet werden soll kann nicht jedem Vertex ein primärer Voxel zugewiesen werden, wie in Abschnitt \ref{subsec:materialInterpolation} beschrieben.
+
+Die Mischverhältnisse der Materialien werden daher anhand der Position innerhalb des jeweiligen Achter-Tupels bestimmt. Dabei haben die Füllmengen der Voxel ebenfalls eine Auswirkung auf diese Mischverhältnisse.
+\\
+
+Der Abstand zu jedem Voxel im Achter-Tupel berechnet sich über folgende Formel (Dabei sind die acht Voxel innerhalb des Tupels über $i \in [0,7]$ nummeriert)
+\[a_i= dif(x_i,x)*dif(y_i,y)*dif(z_i,z)\]
+wobei $a_i$ = Abstand vom $i$ten Voxel, $(x,y,z)$ = Position innerhalb des Tupels, $(x_i,y_i,z_i)$ Position des $i$ten Voxels innerhalb des Tupels und $dif(a,b)$ = Differenz zwischen $a$ und $b$.
+\\
+
+Die Materialmischung berechnet sich über die Formel
+\[m = \frac{\sum\limits_{i=0}^{7}m_i*a_i*f_i}{\sum\limits_{i=0}^{7}a_i*f_i}\]
+wobei $m$ = Mischmaterial, $m_i$ = Materialeigenschaft (z.B.Farbe)  des $i$ten Voxels, $a_i$ = Abstand vom $i$ten Voxel und $f_i$ = Füllmenge des $i$ten Voxels.

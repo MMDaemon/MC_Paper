@@ -1,0 +1,10 @@
+%!TEX root = ../article.tex
+
+% Conclusion
+\section{Aufbau der Voxelstruktur}
+\label{sec:aufbauVoxelstruktur}
+Jeder Voxel enthält einen Wert, der den Materialtyp des Voxels definiert und eine $F"ullmenge \in [1,0]$.
+
+Die Voxel befinden sich in einer übergeordneten Struktur, anhand dieser deren Position definiert ist.
+
+Ein Voxel hat selbst keine direkten Informationen über seine Nachbarn, jedoch enthält jeder Voxel zusätzlich die Information darüber, wie viele seiner sechs Nachbarn gefüllt sind. Diese Information lässt Abhängigkeiten der Ausdehnung des Meshes von der Umgebung des Voxels zu, ohne dass beim Erstellen des Meshes die Nachbarn betrachtet werden müssen. Auch wird anhand der Information geprüft, ob er von allen Seiten mit gefüllten Voxeln umgeben ist. Ist dies der Fall, ist der Voxel nicht sichtbar und wird nicht gerendert. Jedes Mal wenn sich der Status eines Voxels von gefüllt zu nicht gefüllt oder umgekehrt ändert, werden alle Nachbarn über diese Änderung informiert und passen so ihre Menge gefüllter Nachbarn an.

@@ -1,0 +1,15 @@
+%!TEX root = ../article.tex
+
+% Conclusion
+\section{Zielsetzung}
+\label{sec:zielsetzung}
+Das Ziel dieser Arbeit ist eine Methode zu zeigen, die den Marching Cubes Algorithmus verwendet, um Oberflächen für Voxel zu erzeugen, die konstruktiv erzeugt werden und nicht aus Messdaten hervorgehen. Die erzeugten Daten sollen dabei unterschiedliche Materialien enthalten und nicht binär in gefüllt und nicht gefüllt unterschieden werden, sondern eine kontinuierliche Füllmenge aufweisen. Folgende Anforderungen werden dabei gestellt:
+\begin{itemize}
+\item Jedem Voxel werden ein Material und eine kontinuierliche $F"ullmenge \in [1,0]$ zugewiesen. 
+\item Es wird pro Achter-Tupel (siehe \ref{subsec:marchingCubes}) ein Mesh erzeugt. Hierbei haben die einzelnen Voxel nur Zugriff auf die ihnen zugewiesenen Informationen und keine Referenzen oder Zugriffe auf andere Voxel, wie beispielsweise ihre sechs direkten Nachbarn.
+\item Die Größe der Meshes wird sich anhand der Füllmenge innerhalb eines Voxels verändern und nachvollziehbar sein. Nachvollziehbar bedeutet in diesem Zusammenhang, dass bei mehr Füllmenge ein größerer Mesh entsteht und umgekehrt. Es ist in diesem Fall keine Anforderung, dass die Ausdehnung volumetrisch korrekt ist.
+\item Es ist möglich ein Objekt zu erzeugen, das nur aus waagerechten und senkrechten Flächen besteht. Daraus geht hervor, dass es möglich ist 90$^\circ$ Außenwinkel aus senkrechten und waagerechten Flächen zu erzeugen.
+\item Da durch die Skalierung der Marching Cubes unterschiedlich große Flächen in den Meshes entstehen, wird solid Texturing verwendet, um unterschiedliche Detailgrade zu vermeiden.
+\item Es werden fließende Übergänge zwischen den Texturen der verschiedenen Materialien gerendert. Dabei werden ebenfalls nur die Daten der acht Voxel verwendet, die zum Finden der Marching Cubes Variante in der Lookup-Table benötigt werden.
+\item Die Füllmenge eines Voxels beeinflusst auch, wie das Material des Voxels im Verhältnis zu den Materialien der Nachbarn in den Texturübergängen gemischt wird.
+\end{itemize}

@@ -1,0 +1,47 @@
+%!TEX root = ../article.tex
+
+% Conclusion
+\section{Implementierung der  Oberflächengenerierung}
+\label{sec:implementierungOberflaeche}
+Die Vertices bei der Erstellung eines Marching Cubes Meshes werden immer auf einer Kante zwischen zwei Voxeln innerhalb  des Achter-Tupels platziert. Dabei liegt ein solcher Vertex immer zwischen einem gefüllten und einem nicht gefüllten Voxel, um diese zu trennen. (siehe \ref{subsec:marchingCubes})
+
+Um die Meshes unterschiedlich groß in Relation zu der Füllmengen der gerenderten Voxel zu Rendern, wird eine Ausdehnung eingeführt, die sich durch den Abstand zum Mittelpunkt eines Voxels definiert. Die Ausdehnung ist 0, wenn sich der Vertex direkt beim Voxel befindet und die Ausdehnung ist 1, wenn sich der Vertex die Gesamtlänge einer Kante zu einem benachbarten Voxel entfernt befndet.
+
+Auch wird ein Schwellwert eingeführt, um zu bestimmen, ab wann der Voxel für das Generieren des Meshes aus der Lookup-Table als gefüllt gewertet wird.
+
+Das Verhältnis der Füllmengen der zwei Voxel auf einer Kante, auf der sich ein Vertex befindet, wird verwendet, um zu bestimmen, wann sich dieser Vertex ganz bei dem gefüllten Voxel befindet und wie die Ausdehnung von diesem ausgehend berechnet wird.
+
+\subsection{Schwellwerte zum Rendern der Voxel}
+Das Volumen zwischen den Mittelpunkten achter kubisch angeordneten Voxel wird als Einheitsmenge 1 definiert, so dass jedes Achter-Tupel zwischen seinen Mittelpunkten eine Einheitsmenge enthält.
+
+Wird ein Objekt erzeugt, das aus acht kubisch angeordneten Voxeln mit jeweils gleicher Füllmenge besteht, die nur von leeren Voxeln umgeben sind und das nur aus waagerechten und senkrechten Flächen besteht, entsteht ein Würfel, der diese Einheitsmenge einschließt.
+
+Dabei sind die Vertices der Marching Cubes auf ihren Kanten jeweils direkt bei den gefüllten Voxeln und besitzen damit die Ausdehnung 0.
+
+Um dieses Volumen aus den Füllmengen der acht Voxel zu generieren, muss jeder Voxel in der beschriebenen Struktur die Füllmenge 1/8 besitzen.
+
+Ein solcher Würfel besitzt demnach eine Ausdehnung von 0 um die zu 1/8 gefüllten Voxel und ein Volumen von 1. Um nachvollziehbar zu sein wird sich das Objekt verkleinern, wenn bei diesem Würfel aus einem Voxel Material entnommen wird.
+
+Daraus geht hervor, dass die Voxel mit einer kleineren Füllmenge als dieser Schwellwert zum Rendern als nicht gefüllt betrachtet werden.
+
+Wird der Würfel um vier Voxel erweitert, so dass sich ein Quader ergibt, so ist dessen Volumen Zwei. Es ist für die Füllmengen zu beachten, dass bei den Voxeln, die neue Nachbarn erhalten haben, auch neue Verbindungen entstehen. Aufgrund dessen wird der Schwellwert in Abhängigkeit der Menge gefüllter Nachbarn gesetzt, die innerhalb eines jeden Voxels vermerkt sind. (Siehe Abschnitt \ref{sec:aufbauVoxelstruktur})
+\\
+
+Die Formel zur Bildung der Schwellwerte ist
+\[s = \frac{1}{(l)^{2}}\]
+wobei $s$ = Schwellwert und $l$ = Anzahl der sechs direkten Nachbarn, die nicht gefüllt sind. Da der Voxel komplett verdeckt ist und somit nicht gerendert wird, wenn er nur gefüllte Nachbarn besitzt, gibt es keine Probleme mit dem dabei entstehenden Nullteiler.
+
+\subsection{Berechnung der Ausdehnung ausgehend vom gefüllten Voxel}
+Zuerst wird eine Grundausdehnung durch die Füllmenge des gefüllten Voxels bestimmt. Diese ist 0, wenn sich die Füllmenge des gefüllten Voxels genau an seinem Schwellwert befindet. Um wieder die Einheitsgröße 1 als Volumen zwischen den Mittelpunkten von acht kubisch angeordneten Voxeln zu beachten wird die maximale Grundausdehnung eines komplett gefüllten Voxels auf $\frac{\sqrt{2}}{2}$ gesetzt. Der Diamant, der entsteht, wenn ein komplett gefüllter Voxel nur von leeren Voxeln umgeben ist, hat dadurch eine Kantenlänge von 1 und ebenfalls das Volumen 1.
+
+Die Gesamtausdehnung entsteht, indem die Grundausdehnung graduell anhand der Füllmenge des nicht gefüllten Voxels so aufgefüllt wird, dass ein fließender Übergang zu dem Zustand entsteht, an dem der nicht gefüllte Voxel seinen Schwellwert erreicht.
+\\
+
+Die Grundausdehnung berechnet sich über die Formel
+\[a_g= \frac{f_g-s_g}{1-s_g}*\frac{\sqrt{2}}{2}\]
+wobei $a_g$ = Grundausdehnung, $f_g$ = Füllmenge des gefüllten Voxels und $s_g$ = Schwellwert, des gefüllten Voxels.
+\\
+
+Daraus berechnet sich dann die Gesammtausdehnung über die Formel
+\[a = a_g + \frac{1}{a_g} * \frac{f_n}{s_n}\]
+wobei a = Gesammtausdehnung, $a_g$ = Grundausdehnung, $f_n$ = Füllmenge des nicht gefüllten Voxels und $s_n$ = Schwellwert, des nicht gefüllten Voxels.

@@ -1,0 +1,62 @@
+%!TEX root = ../article.tex
+
+% Conclusion
+\section{Ergebnisse}
+\label{sec:conclusion}
+
+\subsection{EDID-Verarbeitung in xfree86 DDX}
+Die Verarbeitung beginnt in \texttt{hw/xfree86/ddc/ddc.c}. In diesem Modul wird die Funktion \texttt{xf86DoEEDID()} aufgerufen, welche über den \interintegratedbus-Bus 128 Byte Blöcke einliest.
+Die \textbf{Prüfsumme} der eingelesenen EDID-Blöcke wird direkt nach dem Einlesen überprüft. Ist diese nicht korrekt wird der Block verworfen und nicht verarbeitet. So ist für einen eventuellen Angriff auf jeden Fall 
+eine korrekte Prüfsumme erforderlich.
+Nach dem Lesen wird ein 128 Byte Speicherbereich für den ersten Block angelegt und darin gespeichert. 
+Aus diesem Block wird die Anzahl der Extension-Blöcke gelesen damit diese ebenfalls gelesen werden können. 
+Vor dem Einlesen wird der bereits allozierte Speicherbereich um die Anzahl der Extension-Blöcke (auch mit stets 128 Byte) vergrößert.
+
+\begin{itemize}
+	\item Zunächst wird die  \textbf{Vendor-Section} (Byte 8-17, little endian)\footnote{Alle Angaben beziehen sich auf den EDID Standard 1.3. Siehe \cite[S.9ff]{Edid13Specification}} verarbeitet.
+	Bit 15 ist dabei für zukünftige Verwendung reserviert, wird aber in der Verarbeitung gar nicht beachtet, sodass hier kein Angriff möglich ist. 
+	Die folgenden zwei Bytes enthalten die von Microsoft vorgegebenen PNP-IDs, die den Hersteller eines Plug-and-Play Geräts angeben. Es ist festzustellen, dass nicht alle Bit-Permutationen definiert sind, da die genutzte Codierung nicht die gesamten 16 Bit benötigt. Dennoch war auf dem Testsystem bei setzen nicht definierter Werte kein abweichendes Verhalten festzustellen, da nicht-passende Bytes ersetzt werden.
+	Das Produktionsjahr (Byte 16) erlaubt  nur Werte zwischen 0 und 53 (\cite[S.11]{Edid13Specification}). Dennoch haben auch hier abweichende Werte keine feststellbaren Auswirkungen.
+	\item Version und Revision (Byte 18-19) werden lediglich in das, dem Treiber zur Verfügung gestellte, struct geschrieben und nicht weiter geprüft. 
+	\item 	Die nächsten 15 Byte beinhalten weitere Informationen zum Display.
+	In Byte 20 Bit sieben wird dabei angegeben, ob das Display analog oder Digital betrieben wird. Davon hängt ab, ob die Bits null bis sechs verwendet werden müssen oder nicht. Bei analogem Betrieb ist dies der Fall, bei digitalem nicht. Dann muss laut HDMI-Spezifikation(Verweis einfügen) bei allen Werten der Default Wert null gesetzt werden. Dies geschieht allerdings nicht. Hier sollte daher der Treiber eine Überprüfung durchführen. Die restlichen Bytes werden ohne Überprüfung geschrieben.
+	\item 	Die nächsten drei Bytes geben an, welche Auflösungen bei welcher Frequenz vom Bildschirm unterstützt werden. Dabei sind in den ersten beiden Bytes je eine Auflösung an ein Bit gebunden. Diese werden ohne Überprüfung akzeptiert. Ein Angriff ist hier erstmal nicht möglich. Im dritten Byte ist ein Bit für eine weitere Auflösung vorgesehen, die restlichen 6 Bit können vom Bildschirmhersteller frei gesetzt werden. Hier ist wieder auschlaggebend, wie und ob der Treiber diese Bits beachtet.
+	\item Die darauf folgenden 16 Byte enthalten die Standard Timing Information und sind aufgeteilt in acht zwei-Byte Blöcke. Jeder Block wird auf Validität geprüft. Dabei Darf nicht in beiden Byte der Wert 0x01, 0x00, 0x20 enthalten sein. Ist dies der Fall, werden alle Werte auf 0 gesetzt.
+	\item 	Die nächsten 72 Bytes enthalten die Detailed Timing Sections. Diese sind aufgeteilt in vier Descriptoren  mit je 18 Byte. Hier wird zuerst geprüft, ob die EDID-Version gleich eins und die Revision größer null ist. Dies ermöglicht unter umständen einen Angriff, da beim Auslesen der Version und Revision keine Plausibilitätsprüfung unternommen wird. Des Weiteren wird Überprüft, ob der Descriptor ein Timing oder ein Other Monitor Descriptor ist.
+	Ist die EDID-Version größer 1.0 wird zwischen verschiedenen Descriptoren unterschieden und die Daten entsprechend des jeweiligen Descriptoren geschrieben. Ansonsten werden die Daten ungeprüft nach festem Schema geschrieben. 
+	Die Daten eines Other Monitor Descriptors werden ohne Überprüfung akzeptiert. Dies ist insofern Interessant, als dass hier der Hersteller oder Angreifer 13 Byte zur Verfügung hat, in die er schreiben kann was er möchte. Jedoch ist keine Längenangabe notwendig, die manipuliert werden könnte. Es sind maximal 13 Bytes erlaubt.
+	
+	
+\end{itemize}
+
+
+
+
+
+\subsection{EDID-Verarbeitung in DRM}
+Eine weitere EDID-Verarbeitung findet sich im Kernel-Modul DRM. Diese wird von DRM-Treibern verwendet. 
+
+Zu Beginn wird der Base-Block eingelesen und validiert. Dabei werden maximal vier Versuche gestartet.  War dann kein Einlesen und keine Validierung erfolgreich, wird der Versuch abgebrochen und NULL zurück gegeben.
+
+Die Validierung besteht aus folgenden Prüfungen:
+Der EDID-Header, also die ersten acht Bytes, muss stimmten. Ist dies der Fall, wird die Checksumme des Blockes überprüft. Ist auch diese korrekt, muss die Version kleiner 1.5 sein. Nur wenn alle Bedingungen wahr sind, wird der Block als zulässig akzeptiert. Ansonsten ist er ungültig und wird verworfen.
+
+Wenn der Base-Block gültig ist, wird Speicherplatz für die im Base-Block angegebene Anzahl Extension-Blöcke allokiert sofern solche Blöcke vorhanden sind. Dieser Speicherplatz wird wieder freigegeben, sobald ein Fehler auftritt und NULL zurück gegeben wird. Hierüber ist also kein Angriff möglich.
+Anschließend werden die  Extension-Blöcke eingelesen und verarbeitet. Diese werden nacheinander eingelesen, wobei für jeden Block vier versuche gestartet werden. Dabei ist die Anzahl der Versuche fest codiert und nicht von einer Variable abhängig. Jeder Extension-Block wird auf Validität geprüft.
+Dabei wird nur die Checksumme geprüft.
+Sind alle Extension-Blöcke überprüft und die nicht validen aussortiert, wird der allokierte Speicher reallokiert sodass er auf die Anzahl und damit die Speichergröße der validen Blöcke passt. Außerdem wird die Anzahl der Extension-Blöcke im Base-Block angepasst damit es später zu keinem Fehler kommt.
+Dies ist die komplette EDID-Verarbeitung im Kernel. Die eigentliche Interpretation der Daten erfolgt erst im Treiber.
+
+\subsection{Windows}
+Zu Beginn des Projekts wurde getestet, ob der simulierte Bildschirm auch von Windows erkannt wurde. Er wird erkannt, jedoch werden die Extension-Blöcke von Windows nicht beachtet. Nur der Base-Block wird von Windows selbst in die Registry geschrieben. Daher wird ein Angriff deutlich schwieriger, da die Extension-Blöcke mehr Möglichkeiten bieten, Daten zu manipulieren.
+
+\subsection{Verhalten RaspberryPi}	HDMI hat einen integrierten Hot-Plug-Pin. Mit diesem kann ein Connector aus- oder eingesteckt werden, ohne das die eigentliche Steckverbindung gelöst werden müsste.
+Unter Windows funktioniert dies tadellos und wird jedes mal richtig erkannt.
+Unter Raspbian auf dem Raspberry Pi ist dies nicht der Fall. Dort wird beim ``Ausstecken'', also durch senden einer logischen Null durch den Hot-Plug-Pin der Bildschirm zwar als ausgesteckt erkannt. Wird er jedoch durch setzen einer logischen Eins auf dem Hot-Plug-Pin wieder eingesteckt, wird das Display nicht jedes mal erkannt. 
+Durch Versuche konnte kein einheitliches Verhalten festgestellt werden. Teilweise wurde das Display beim ersten Versuch erkannt, teilweise erst beim sechsten.
+Durch dieses Verhalten wird Fuzzing extrem erschwert, da der HDMI Connector bei jedem Versuch aus und wieder eingesteckt werden müsste.
+
+
+\subsection{Reproduzierbarkeit}
+Ein Angriff auf ein System mithilfe einer Manipulation von EDID-Daten ist aufgrund der unterschiedlichen Verarbeitungswege nicht auf andere Betriebssysteme, auch nicht bedingungslos auf andere Linux-Systeme, übertragbar. Die Windows-Verarbeitung wurde für dieses Dokument gar nicht weiter untersucht.
+Auch ist ein möglicher Angriff auf einen DRM-Treiber nicht auf andere DRM-Treiber übertragbar, da diese bei der EDID-Verarbeitung sehr viel selbst übernehmen und nicht auf standardisierte Kernel-Funktionen zurück greifen. 
