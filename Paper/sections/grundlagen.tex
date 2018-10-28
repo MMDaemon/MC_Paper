@@ -29,7 +29,7 @@ Der Marching Cubes Algorithmus wurde entwickelt um gemessene Voxeldaten bei eine
 			\end{figure}
 			\end{minipage}
 
-\subsection{Material-Interpolation in Marching cubes}
+\subsection{Material-Interpolation in Marching Cubes}
 \label{subsec:materialInterpolation}
 Eine Methode um Voxel mit jeweils einem Material mit fließenden Übergängen in der Materialdarstellung zwischen unterschiedlichen Materialien zu rendern ist es, den Vertices beim Erstellen jeweils den gefüllten Voxel an der Kante, auf der sie liegen, als primären Voxel zuzuweisen. Somit wird dem jeweiligen Vertex auch das Material des Voxels zugeordnet. Um die Materialien zu interpolieren, werden jedem Vertex die Materialindizes aller Vertices des zu rendernden Polygons und eine Gewichtung für jeden Vertex im Polygon zugewiesen. Durch die Interpolation dieser Werte wird im Polygon bestimmt, welches Material wo gerendert wird. \cite{iomt}
 
